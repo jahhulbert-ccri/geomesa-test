@@ -46,15 +46,25 @@ fi
 if [[ -e /tmp/gm-e-test-2.csv ]]; then
   rm /tmp/gm-e-test-2.csv
 fi
+if [[ -e /tmp/gm-e-test-3.csv ]]; then
+  rm /tmp/gm-e-test-3.csv
+fi
 $geomesa export -u root -p secret -c test1 -f example-csv -F csv | sort > /tmp/gm-e-test.csv
 $geomesa export -u root -p secret -c test1 -f example-csv -F avro > /tmp/gm-e-test.avro
 $geomesa ingest -u root -p secret -c test1 -f reimport-avro /tmp/gm-e-test.avro
+hadoop fs -put /tmp/gm-e-test.avro
+$geomesa ingest -u root -p secret -c test1 -f reimport-avro2 hdfs://localhost:9000/user/$(whoami)/gm-e-test.avro
+
 $geomesa export -u root -p secret -c test1 -f reimport-avro -F csv | sort> /tmp/gm-e-test-2.csv
+$geomesa export -u root -p secret -c test1 -f reimport-avro2 -F csv | sort> /tmp/gm-e-test-3.csv
 
 echo "diff /tmp/gm-e-test.csv /tmp/gm-e-test-2.csv"
 diff /tmp/gm-e-test.csv /tmp/gm-e-test-2.csv
 echo "Diff end"
 
+echo "diff /tmp/gm-e-test.csv /tmp/gm-e-test-3.csv"
+diff /tmp/gm-e-test.csv /tmp/gm-e-test-3.csv
+echo "Diff end"
 
 
 
