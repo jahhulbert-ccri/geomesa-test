@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # you needito set these and put the dist and tools in /tmp and have cloudlocal at the path below
-GMVER="1.2.4-SNAPSHOT"
+GMVER="1.2.5-SNAPSHOT"
 TEST_CL_PATH="${HOME}/dev/cloud-local"
 
 # gm stuff
