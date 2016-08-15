@@ -2,7 +2,11 @@
 
 # you needito set these and put the dist and tools in /tmp and have cloudlocal at the path below
 GMVER="1.2.5-SNAPSHOT"
+VER_SHORT="125"   # TODO make this read from ${GMVER}
 TEST_CL_PATH="${HOME}/dev/cloud-local"
+
+# Twitter data
+TWITTER_FILE=/fill/me/in
 
 # gm stuff
 GM="/tmp/geomesa-tools-${GMVER}"
@@ -13,26 +17,29 @@ export GEOMESA_HOME=${GM}
 
 . "${TEST_CL_PATH}/bin/config.sh"
 
-NS="gmtest"
+NS="gmtest${VER_SHORT}"
 CATALOG="${NS}.gmtest1"
 
 function accrun() {
     accumulo shell -u root -p secret -e "$1"
 }
 
-echo "placing iter in hdfs"
-itrdir="/geomesa/iter/${NS}"
-itrfile="geomesa-accumulo-distributed-runtime-${GMVER}.jar"
-hadoop fs -rm -r $itrdir
-hadoop fs -mkdir -p $itrdir 
-hadoop fs -put ${GM_DIST}/dist/accumulo/${itrfile} ${itrdir}/${itrfile}
 
-echo "configuring namespaces"
-accrun "deletenamespace ${NS} -f"
-accrun "createnamespace ${NS}"
-accrun "config -d general.vfs.context.classpath.${NS}"
-accrun "config -s general.vfs.context.classpath.${NS}=hdfs://localhost:9000${itrdir}/${itrfile}"
-accrun "config -ns ${NS} -s table.classpath.context=${NS}"
+function setup()  {
+    echo "Placing iter in hdfs" && \
+    itrdir="/geomesa/iter/${NS}" && \
+    itrfile="geomesa-accumulo-distributed-runtime-${GMVER}.jar" && \
+    hadoop fs -rm -r $itrdir && \
+    hadoop fs -mkdir -p $itrdir && \
+    hadoop fs -put ${GM_DIST}/dist/accumulo/${itrfile} ${itrdir}/${itrfile} && \
+    
+    echo "configuring namespaces" && \
+    accrun "deletenamespace ${NS} -f" && \
+    accrun "createnamespace ${NS}" && \
+    accrun "config -d general.vfs.context.classpath.${NS}" && \
+    accrun "config -s general.vfs.context.classpath.${NS}=hdfs://localhost:9000${itrdir}/${itrfile}" && \
+    accrun "config -ns ${NS} -s table.classpath.context=${NS}"
+}
 
 function test_local() {
     $geomesa ingest -u root -p secret -c ${CATALOG} -s example-csv  -C example-csv                                      $GM/examples/ingest/csv/example.csv
@@ -155,20 +162,48 @@ function test_vis() {
 
 }
 
-#echo "testing local"
-test_local
-#
-#echo "testing hdfs"
-test_hdfs
-#
-#echo "testing export"
-test_export
-
-echo "testing vis"
-test_vis
-
+function test_twitter() {
+    # number of expected records to ingest correctly
+    expected=97045 && \
+    $geomesa ingest -u root -p secret -c ${CATALOG} -s twitter -C twitter-place-centroid ${TWITTER_FILE} && \
+    $geomesa ingest -u root -p secret -c ${CATALOG} -s twitter-polygon -C twitter-polygon ${TWITTER_FILE} && \
+    c1=$($geomesa export -u root -p secret -c ${CATALOG} -f twitter -a user_id --no-header | wc -l) && \
+    c2=$($geomesa export -u root -p secret -c ${CATALOG} -f twitter-polygon -a user_id --no-header | wc -l) && \
+    test $c1 -eq $c2 && \
+    test $c1 -eq $expected
+}
 
 
+echo -n "setup..." && \
+setup && \
+echo && \
 
+echo "testing local" && \
+test_local && \
+echo && \
 
-echo "DONE"
+echo "testing hdfs" && \
+test_hdfs && \
+echo && \
+
+echo "testing export" && \
+test_export && \
+echo && \
+
+echo "testing vis" && \
+test_vis && \
+echo && \
+
+echo "testing s3" && \
+test_s3 && \
+echo && \
+
+echo "Testing twitter schema" && \
+test_twitter && \
+echo "PASSED - Twitter tests"
+
+if [[ "$?" == "0" ]]; then
+  echo "ALL TESTS PASSED";
+else
+  echo "FAILURE"
+fi
