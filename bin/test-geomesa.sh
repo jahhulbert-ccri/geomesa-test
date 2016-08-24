@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # you needito set these and put the dist and tools in /tmp and have cloudlocal at the path below
-GMVER="1.2.5-SNAPSHOT"
-VER_SHORT="125"   # TODO make this read from ${GMVER}
+GMVER="1.2.6-SNAPSHOT"
+VER_SHORT="126"   # TODO make this read from ${GMVER}
 TEST_CL_PATH="${HOME}/dev/cloud-local"
 
 # Twitter data
@@ -29,14 +29,14 @@ function setup()  {
     echo "Placing iter in hdfs" && \
     itrdir="/geomesa/iter/${NS}" && \
     itrfile="geomesa-accumulo-distributed-runtime-${GMVER}.jar" && \
-    hadoop fs -rm -r $itrdir && \
+    (hadoop fs -test -d $itrdir && hadoop fs -rm -r $itrdir); \
     hadoop fs -mkdir -p $itrdir && \
     hadoop fs -put ${GM_DIST}/dist/accumulo/${itrfile} ${itrdir}/${itrfile} && \
     
     echo "configuring namespaces" && \
-    accrun "deletenamespace ${NS} -f" && \
+    (test "$(accrun "namespaces" | grep $NS | wc -l)" == "1" && accrun "deletenamespace ${NS} -f"); \
     accrun "createnamespace ${NS}" && \
-    accrun "config -d general.vfs.context.classpath.${NS}" && \
+    (test "$(accrun "config" | grep "general.vfs.context.classpath.${NS}" | wc -l)" == "1" && accrun "config -d general.vfs.context.classpath.${NS}"); \
     accrun "config -s general.vfs.context.classpath.${NS}=hdfs://localhost:9000${itrdir}/${itrfile}" && \
     accrun "config -ns ${NS} -s table.classpath.context=${NS}"
 }
