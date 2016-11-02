@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 # you needito set these and put the dist and tools in /tmp and have cloudlocal at the path below
-GMVER="1.3.0-SNAPSHOT"
+GMVER="1.3.0-m2-SNAPSHOT"
+SCALA_VER="2.11"
 VER_SHORT="130"   # TODO make this read from ${GMVER}
 TEST_CL_PATH="${HOME}/dev/cloud-local"
 
@@ -9,7 +10,7 @@ TEST_CL_PATH="${HOME}/dev/cloud-local"
 TWITTER_FILE=/fill/me/in
 
 # gm stuff
-GM_ACC="/tmp/geomesa-accumulo-${GMVER}"
+GM_ACC="/tmp/geomesa-accumulo_${SCALA_VER}-${GMVER}"
 GMTMP="geomesa-test-tmp"
 geomesa="$GM_ACC/bin/geomesa"
 export GEOMESA_HOME=${GM_ACC}
@@ -27,7 +28,7 @@ function accrun() {
 function setup()  {
     echo "Placing iter in hdfs" && \
     itrdir="/geomesa/iter/${NS}" && \
-    itrfile="geomesa-accumulo-distributed-runtime-${GMVER}.jar" && \
+    itrfile="geomesa-accumulo-distributed-runtime_${SCALA_VER}-${GMVER}.jar" && \
     (hadoop fs -test -d $itrdir && hadoop fs -rm -r $itrdir); \
     hadoop fs -mkdir -p $itrdir && \
     hadoop fs -put ${GM_ACC}/dist/accumulo/${itrfile} ${itrdir}/${itrfile} && \
@@ -199,7 +200,9 @@ echo && \
 
 echo "Testing twitter schema" && \
 test_twitter && \
-echo "PASSED - Twitter tests"
+echo "PASSED - Twitter tests" && \
+
+echo "Tests complete"
 
 if [[ "$?" == "0" ]]; then
   echo "ALL TESTS PASSED";
