@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
 
 # you needito set these and put the dist and tools in /tmp and have cloudlocal at the path below
-GMVER="1.2.6-SNAPSHOT"
-VER_SHORT="126"   # TODO make this read from ${GMVER}
+GMVER="1.3.0-SNAPSHOT"
+VER_SHORT="130"   # TODO make this read from ${GMVER}
 TEST_CL_PATH="${HOME}/dev/cloud-local"
 
 # Twitter data
 TWITTER_FILE=/fill/me/in
 
 # gm stuff
-GM="/tmp/geomesa-tools-${GMVER}"
-GM_DIST="/tmp/geomesa-${GMVER}"
+GM_ACC="/tmp/geomesa-accumulo-${GMVER}"
 GMTMP="geomesa-test-tmp"
-geomesa="$GM/bin/geomesa"
-export GEOMESA_HOME=${GM}
+geomesa="$GM_ACC/bin/geomesa"
+export GEOMESA_HOME=${GM_ACC}
 
 . "${TEST_CL_PATH}/bin/config.sh"
 
@@ -31,7 +30,7 @@ function setup()  {
     itrfile="geomesa-accumulo-distributed-runtime-${GMVER}.jar" && \
     (hadoop fs -test -d $itrdir && hadoop fs -rm -r $itrdir); \
     hadoop fs -mkdir -p $itrdir && \
-    hadoop fs -put ${GM_DIST}/dist/accumulo/${itrfile} ${itrdir}/${itrfile} && \
+    hadoop fs -put ${GM_ACC}/dist/accumulo/${itrfile} ${itrdir}/${itrfile} && \
     
     echo "configuring namespaces" && \
     (test "$(accrun "namespaces" | grep $NS | wc -l)" == "1" && accrun "deletenamespace ${NS} -f"); \
@@ -42,13 +41,13 @@ function setup()  {
 }
 
 function test_local() {
-    $geomesa ingest -u root -p secret -c ${CATALOG} -s example-csv  -C example-csv                                      $GM/examples/ingest/csv/example.csv
-    $geomesa ingest -u root -p secret -c ${CATALOG} -s example-json -C example-json                                     $GM/examples/ingest/json/example.json
-    $geomesa ingest -u root -p secret -c ${CATALOG} -s example-json -C $GM/examples/ingest/json/example_multi_line.conf $GM/examples/ingest/json/example_multi_line.json
-    $geomesa ingest -u root -p secret -c ${CATALOG} -s example-xml  -C example-xml                                      $GM/examples/ingest/xml/example.xml
-    $geomesa ingest -u root -p secret -c ${CATALOG} -s example-xml  -C example-xml-multi                                $GM/examples/ingest/xml/example_multi_line.xml
-    $geomesa ingest -u root -p secret -c ${CATALOG} -s example-avro -C example-avro-no-header                           $GM/examples/ingest/avro/example_no_header.avro
-    #$geomesa ingest -u root -p secret -c ${CATALOG} -s example-avro -C example-avro-header                             $GM/examples/ingest/avro/with_header.avro
+    $geomesa ingest -u root -p secret -c ${CATALOG} -s example-csv  -C example-csv                                      $GM_ACC/examples/ingest/csv/example.csv
+    $geomesa ingest -u root -p secret -c ${CATALOG} -s example-json -C example-json                                     $GM_ACC/examples/ingest/json/example.json
+    $geomesa ingest -u root -p secret -c ${CATALOG} -s example-json -C $GM_ACC/examples/ingest/json/example_multi_line.conf $GM_ACC/examples/ingest/json/example_multi_line.json
+    $geomesa ingest -u root -p secret -c ${CATALOG} -s example-xml  -C example-xml                                      $GM_ACC/examples/ingest/xml/example.xml
+    $geomesa ingest -u root -p secret -c ${CATALOG} -s example-xml  -C example-xml-multi                                $GM_ACC/examples/ingest/xml/example_multi_line.xml
+    $geomesa ingest -u root -p secret -c ${CATALOG} -s example-avro -C example-avro-no-header                           $GM_ACC/examples/ingest/avro/example_no_header.avro
+    #$geomesa ingest -u root -p secret -c ${CATALOG} -s example-avro -C example-avro-header                             $GM_ACC/examples/ingest/avro/with_header.avro
 }
 
 
@@ -56,17 +55,17 @@ function test_hdfs() {
 
     hadoop fs -ls /user/$(whoami)
     
-    hadoop fs -put $GM/examples/ingest/csv/example.csv
-    hadoop fs -put $GM/examples/ingest/json/example.json
-    hadoop fs -put $GM/examples/ingest/json/example_multi_line.json
-    hadoop fs -put $GM/examples/ingest/xml/example.xml
-    hadoop fs -put $GM/examples/ingest/xml/example_multi_line.xml
-    hadoop fs -put $GM/examples/ingest/avro/example_no_header.avro
-    #hadoop fs -put $GM/examples/ingest/avro/with_header.avro
+    hadoop fs -put $GM_ACC/examples/ingest/csv/example.csv
+    hadoop fs -put $GM_ACC/examples/ingest/json/example.json
+    hadoop fs -put $GM_ACC/examples/ingest/json/example_multi_line.json
+    hadoop fs -put $GM_ACC/examples/ingest/xml/example.xml
+    hadoop fs -put $GM_ACC/examples/ingest/xml/example_multi_line.xml
+    hadoop fs -put $GM_ACC/examples/ingest/avro/example_no_header.avro
+    #hadoop fs -put $GM_ACC/examples/ingest/avro/with_header.avro
     
     $geomesa ingest -u root -p secret -c ${CATALOG} -s example-csv  -C example-csv                                      hdfs://localhost:9000/user/$(whoami)/example.csv
     $geomesa ingest -u root -p secret -c ${CATALOG} -s example-json -C example-json                                     hdfs://localhost:9000/user/$(whoami)/example.json
-    $geomesa ingest -u root -p secret -c ${CATALOG} -s example-json -C $GM/examples/ingest/json/example_multi_line.conf hdfs://localhost:9000/user/$(whoami)/example_multi_line.json
+    $geomesa ingest -u root -p secret -c ${CATALOG} -s example-json -C $GM_ACC/examples/ingest/json/example_multi_line.conf hdfs://localhost:9000/user/$(whoami)/example_multi_line.json
     $geomesa ingest -u root -p secret -c ${CATALOG} -s example-xml  -C example-xml                                      hdfs://localhost:9000/user/$(whoami)/example.xml
     $geomesa ingest -u root -p secret -c ${CATALOG} -s example-xml  -C example-xml-multi                                hdfs://localhost:9000/user/$(whoami)/example_multi_line.xml
     $geomesa ingest -u root -p secret -c ${CATALOG} -s example-avro -C example-avro-no-header                           hdfs://localhost:9000/user/$(whoami)/example_no_header.avro
@@ -134,7 +133,7 @@ function test_export() {
 }
 
 function test_vis() {
-   $geomesa ingest -u root -p secret -c ${CATALOG} -s example-csv -f viscsv  -C example-csv-with-visibilities $GM/examples/ingest/csv/example.csv
+   $geomesa ingest -u root -p secret -c ${CATALOG} -s example-csv -f viscsv  -C example-csv-with-visibilities $GM_ACC/examples/ingest/csv/example.csv
    
    # no auths gets no data
    accumulo shell -u root -p secret -e "setauths -u root -s ''"
